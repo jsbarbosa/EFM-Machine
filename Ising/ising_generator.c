@@ -6,16 +6,18 @@
 
 int **spins;
 
+const double TC = 2.0 / log(1.0 + sqrt(2)) * J;
+
 int main(int argc, char const *argv[])
 {
-  // sampleTemperatures("results.dat", 1e-6, 1e1, 5);
+  sampleTemperatures("results.dat", 0.1, 7, 150);
 
   // double E, mag;
   // createSpins();
   // sampleTemperature(1e-6, &E, &mag);
   // clean();
 
-  doEvolution(1e-6, 1e6, 1e3);
+  // doEvolution(1e-6, 1e6, 1e3);
   return 0;
 }
 
@@ -56,33 +58,40 @@ void printFile(const char *filename)
 void sampleTemperatures(const char *filename, double t_min, double t_max, int n)
 {
   FILE *file = fopen(filename, "w");
-  double E, mag;
+  double E, mag, cv, chi;
   double t;
-
+  createSpins();
   for(t = t_min; t < t_max; t += (t_max - t_min) / n)
   {
-    createSpins();
-    sampleTemperature(t, &E, &mag);
-    fprintf(file, "%e %e %e\n", t, E, mag);
-    clean();
+    // createSpins();
+    sampleTemperature(t, &E, &mag, &cv, &chi);
+    // clean();
+    fprintf(file, "%e %e %e %e %e \n", t / TC, E, mag, cv, chi);
   }
   fclose(file);
+  clean();
 }
 
-void sampleTemperature(double T, double *E, double *mag)
+void sampleTemperature(double T, double *E, double *mag, double *cv, double *chi)
 {
   int i;
   *E = 0;
   *mag = 0;
+
+  int m = Lx * Ly;
+  double E2 = 0, mag2 = 0;
+
   for(i = 0; i < N_ignore; i++) evolve(T);
   for(i = 0; i < N_samples; i++)
   {
     evolve(T);
-    *E += getEnergy();
-    *mag += getMagnitude();
+    *E += getEnergy() / (N_samples * m);
+    E2 += pow(*E, 2);
+    *mag += fabs(getMagnitude()) / (N_samples * m);;
+    mag2 += pow(*mag, 2);
   }
-  *E = *E / N_samples;
-  *mag = *mag / N_samples;
+  *cv = (E2 - pow(*E, 2)) / (T * T);
+  *chi = (mag2 - pow(*mag, 2)) / T;
 }
 
 void evolve(double T)
@@ -145,14 +154,15 @@ int posBoundaries(int i, int size)
 
 double associatedEnergy(int i, int j)
 {
-  double center, up, down, left, right;
-  center = energyAt(i, j);
-  up = energyAt(posBoundaries(i + 1, Ly), j);
-  down = energyAt(posBoundaries(i - 1, Ly), j);
-  left = energyAt(i, posBoundaries(j - 1, Lx));
-  right = energyAt(i, posBoundaries(j + 1, Lx));
+  double center = energyAt(i, j);
+  // double up, down, left, right;
+  // up = energyAt(posBoundaries(i + 1, Ly), j);
+  // down = energyAt(posBoundaries(i - 1, Ly), j);
+  // left = energyAt(i, posBoundaries(j - 1, Lx));
+  // right = energyAt(i, posBoundaries(j + 1, Lx));
 
-  return center + up + down + left + right;
+  return center;
+  // return center + up + down + left + right;
 }
 
 void createSpins(void)

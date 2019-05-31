@@ -2,8 +2,9 @@ FILE = ising_generator.c
 
 animate : animation.py results/*.dat
 	python3 animation.py
-# run : results.dat
-# 	python3 plot.py
+
+run : results.dat
+	python3 plot.py
 
 results.dat : a.out
 	./a.out
